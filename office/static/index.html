@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Zentira — Kantor Virtual 3D Multi-Agent AI</title>
+  <link id="favicon" rel="icon" type="image/png" href="/static/assets/zentira-1.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/static/style.css" />
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+      }
+    }
+  </script>
+</head>
+
+<body data-theme="day">
+  <!-- Fullscreen 3D Voxel World -->
+  <div id="canvas-wrap">
+    <canvas id="office-canvas"></canvas>
+    <canvas id="cinema-canvas" class="cinema-canvas hidden"></canvas>
+    <div id="bubble-layer"></div>
+    <div id="webgl-fallback" class="hidden">
+      Memuat studio 3D Voxel... Pastikan koneksi internet aktif untuk memuat Three.js.
+    </div>
+  </div>
+
+  <!-- Minimal Swiss Top Bar -->
+  <header class="topbar" id="topbar">
+    <div class="brand-cluster">
+      <button class="brand-logo-btn" id="btn-cycle-logo" title="Klik untuk ganti variasi logo Zentira (1–4)">
+        <img id="brand-logo-img" src="/static/assets/zentira-1.png" alt="Logo Zentira" />
+      </button>
+      <div class="brand-copy">
+        <div class="brand-title">
+          Zentira <span class="brand-tag">HQ</span>
+          <a class="brand-ig-link" href="https://instagram.com/quietdenn" target="_blank" rel="noopener noreferrer" title="Instagram Founder: @quietdenn">
+            <img src="/static/assets/instagram.jpg" alt="IG" />
+            <span>@quietdenn</span>
+          </a>
+        </div>
+        <div class="brand-sub">
+          <span class="live-dot" id="live-dot"></span>
+          <span id="connection-status">Terhubung live • 6 Agent aktif</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Camera Presets -->
+    <div class="segmented-bar cam-presets" role="group" aria-label="Sudut kamera">
+      <button class="seg-btn active" data-cam="iso">Isometrik</button>
+      <button class="seg-btn" data-cam="indoor">Dalam Ruangan</button>
+      <button class="seg-btn" data-cam="outdoor">Sekitar Gedung</button>
+    </div>
+
+    <!-- Action Controls -->
+    <div class="topbar-actions">
+      <button class="tool-btn" id="btn-zen" title="Sembunyikan UI untuk lihat 3D penuh">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+          stroke-linecap="round" stroke-linejoin="round">
+          <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" />
+          <circle cx="12" cy="12" r="3" />
+        </svg>
+        <span class="btn-label">Mode Bersih</span>
+      </button>
+      <button class="tool-btn" id="btn-theme" title="Ganti suasana siang/malam">
+        <svg id="icon-theme" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+          stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" />
+        </svg>
+        <span class="btn-label" id="label-theme">Malam</span>
+      </button>
+      <button class="tool-btn" id="btn-phone-url" title="Buka di HP (1 Wi-Fi)">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+          stroke-linecap="round" stroke-linejoin="round">
+          <rect width="14" height="20" x="5" y="2" rx="2" ry="2" />
+          <path d="M12 18h.01" />
+        </svg>
+        <span class="btn-label">HP</span>
+      </button>
+      <button class="tool-btn tool-btn-primary" id="btn-inbox" title="Inbox Bos">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+          stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="22 12 16 12 14 15 10 15 8 12 2 12" />
+          <path
+            d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z" />
+        </svg>
+        <span class="btn-label">Inbox</span>
+        <span class="badge hidden" id="inbox-badge">0</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Apple-style Left Dropdown Menu (Status Kantor & Atap) -->
+  <div class="office-menu-wrap" id="office-menu-wrap">
+    <button class="apple-menu-trigger" id="btn-office-menu" aria-haspopup="true" aria-expanded="false" title="Kontrol status kantor & atap">
+      <span class="apple-status-dot work" id="office-menu-dot"></span>
+      <span id="office-menu-label">Kantor: Masuk</span>
+      <svg class="apple-chevron" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
+        <path d="m6 9 6 6 6-6"/>
+      </svg>
+    </button>
+
+    <div class="apple-dropdown hidden" id="office-menu-dropdown" role="menu" aria-label="Menu Kontrol Kantor">
+      <div class="apple-menu-section">Status Kantor</div>
+      <button class="apple-menu-row active" data-office-mode="work" role="menuitemradio" aria-checked="true">
+        <span class="apple-row-icon work">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/>
+            <polyline points="10 17 15 12 10 7"/>
+            <line x1="15" x2="3" y1="12" y2="12"/>
+          </svg>
+        </span>
+        <span class="apple-row-copy">
+          <span class="apple-row-title">Masuk</span>
+          <span class="apple-row-sub">Shuttle Van antar tim kerja</span>
+        </span>
+        <span class="apple-check" aria-hidden="true">✓</span>
+      </button>
+      <button class="apple-menu-row" data-office-mode="meeting" role="menuitemradio" aria-checked="false">
+        <span class="apple-row-icon meeting">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
+            <circle cx="9" cy="7" r="4"/>
+            <path d="M22 21v-2a4 4 0 0 0-3-3.87"/>
+            <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+          </svg>
+        </span>
+        <span class="apple-row-copy">
+          <span class="apple-row-title">Meeting</span>
+          <span class="apple-row-sub">Duduk &amp; diskusi bareng tim</span>
+        </span>
+        <span class="apple-check" aria-hidden="true">✓</span>
+      </button>
+      <button class="apple-menu-row" data-office-mode="holiday" role="menuitemradio" aria-checked="false">
+        <span class="apple-row-icon holiday">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2"/>
+            <circle cx="7" cy="17" r="2"/>
+            <path d="M9 17h6"/>
+            <circle cx="17" cy="17" r="2"/>
+          </svg>
+        </span>
+        <span class="apple-row-copy">
+          <span class="apple-row-title">Libur</span>
+          <span class="apple-row-sub">Shuttle Van jemput pulang</span>
+        </span>
+        <span class="apple-check" aria-hidden="true">✓</span>
+      </button>
+
+      <div class="apple-menu-divider"></div>
+
+      <div class="apple-menu-section">Atap &amp; Dinding</div>
+      <div class="apple-roof-seg" role="group" aria-label="Mode Atap">
+        <button class="apple-seg-opt active" data-roof-opt="auto">Auto</button>
+        <button class="apple-seg-opt" data-roof-opt="closed">Tertutup</button>
+        <button class="apple-seg-opt" data-roof-opt="open">Terbuka</button>
+      </div>
+
+      <div class="apple-cam-section">
+        <div class="apple-menu-divider"></div>
+        <div class="apple-menu-section">Sudut Kamera</div>
+        <div class="apple-roof-seg" role="group" aria-label="Sudut kamera mobile">
+          <button class="apple-seg-opt active" data-cam="iso">Isometrik</button>
+          <button class="apple-seg-opt" data-cam="indoor">Dalam</button>
+          <button class="apple-seg-opt" data-cam="outdoor">Luar</button>
+        </div>
+      </div>
+
+      <div class="apple-menu-divider"></div>
+
+      <div class="apple-menu-section">Studio Sinematik</div>
+      <div class="apple-aspect-seg" role="group" aria-label="Rasio video sinematik">
+        <button class="apple-seg-opt active" data-cinema-aspect="16:9">16:9 Demo</button>
+        <button class="apple-seg-opt" data-cinema-aspect="9:16">9:16 Reels</button>
+      </div>
+      <button class="apple-menu-row" id="btn-cinema-tour" role="menuitem">
+        <span class="apple-row-icon cinema">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="5 3 19 12 5 21 5 3"/>
+          </svg>
+        </span>
+        <span class="apple-row-copy">
+          <span class="apple-row-title">Tur Sinematik</span>
+          <span class="apple-row-sub">Preview + Kinetic Text (36 dtk)</span>
+        </span>
+      </button>
+      <button class="apple-menu-row" id="btn-cinema-record" role="menuitem">
+        <span class="apple-row-icon record">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+            <circle cx="12" cy="12" r="6"/>
+          </svg>
+        </span>
+        <span class="apple-row-copy">
+          <span class="apple-row-title">Render Video MP4</span>
+          <span class="apple-row-sub">Anti-drop 60fps + Motion Graphics</span>
+        </span>
+      </button>
+
+      <div class="apple-menu-divider"></div>
+
+      <div class="apple-menu-section">Data &amp; Cloud</div>
+      <div class="apple-aspect-seg" role="group" aria-label="Backup dan restore data">
+        <button class="apple-seg-opt" id="btn-backup-export" title="Unduh backup kas, prospek, nama tim & rate card (.json)">Backup</button>
+        <button class="apple-seg-opt" id="btn-backup-import" title="Pulihkan data dari file backup (.json)">Restore</button>
+      </div>
+      <input type="file" id="backup-import-file" accept=".json,application/json" class="hidden" />
+      <button class="apple-menu-row hidden" id="btn-office-logout" role="menuitem">
+        <span class="apple-row-icon record">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+            <polyline points="16 17 21 12 16 7"/>
+            <line x1="21" x2="9" y1="12" y2="12"/>
+          </svg>
+        </span>
+        <span class="apple-row-copy">
+          <span class="apple-row-title">Keluar (Lock)</span>
+          <span class="apple-row-sub">Kunci kembali sesi kantor</span>
+        </span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Apple-style Founder Password Login Gate (aktif otomatis saat OFFICE_PASSWORD diisi di cloud) -->
+  <div class="login-overlay hidden" id="login-overlay" role="dialog" aria-modal="true" aria-label="Login Zentira HQ">
+    <div class="login-card">
+      <div class="login-logo-wrap">
+        <img src="/static/assets/zentira-wall.png" alt="Zentira" />
+      </div>
+      <h2>Zentira HQ</h2>
+      <p class="muted-xs">Akses privat Multi-Agent Studio. Masukkan password Founder untuk masuk.</p>
+      <form id="login-form" class="login-form">
+        <input type="password" id="login-password" autocomplete="current-password" placeholder="Masukkan password..." required />
+        <div id="login-err" class="error-banner hidden"></div>
+        <button type="submit" class="btn btn-accent" id="btn-login-submit">Masuk ke Kantor</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Minimal Floating Cinema / Recording HUD (not captured inside WebGL video!) -->
+  <div class="cinema-hud hidden" id="cinema-hud" role="status" aria-live="polite">
+    <span class="cinema-rec-dot" id="cinema-rec-dot"></span>
+    <span class="cinema-badge" id="cinema-mode-badge">SINEMATIK</span>
+    <span class="cinema-time" id="cinema-time">00:00 / 00:28</span>
+    <span class="cinema-sep" aria-hidden="true">•</span>
+    <span class="cinema-shot" id="cinema-shot-label">Shot 1: Fasad Zentira HQ</span>
+    <button class="cinema-stop-btn" id="btn-cinema-stop">Berhenti</button>
+  </div>
+
+  <!-- Floating Exit Zen Mode Button -->
+  <button class="zen-exit hidden" id="btn-zen-exit">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+      stroke-linecap="round" stroke-linejoin="round">
+      <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" />
+      <circle cx="12" cy="12" r="3" />
+    </svg>
+    Tampilkan Panel UI
+  </button>
+
+  <!-- Phone URL Popover -->
+  <div id="phone-modal" class="popover-card hidden" role="dialog" aria-label="Akses dari HP">
+    <div class="popover-head">
+      <div class="popover-title">Kontrol dari HP (1 Wi-Fi)</div>
+      <button class="icon-close" id="close-phone-modal" aria-label="Tutup">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M18 6 6 18" />
+          <path d="m6 6 12 12" />
+        </svg>
+      </button>
+    </div>
+    <p class="muted-sm">Pastikan HP dan PC berada di Wi-Fi yang sama, lalu buka alamat berikut di Chrome/Safari HP:</p>
+    <div class="url-copy-row">
+      <code id="phone-url-text">http://127.0.0.1:8000</code>
+      <button class="btn btn-sm btn-primary" id="copy-phone-url">Salin</button>
+    </div>
+    <p class="muted-xs">Animasi karakter 3D dan semua laporan otomatis sinkron real-time antara PC dan HP.</p>
+  </div>
+
+  <!-- Edit Team Names Modal -->
+  <div id="names-modal" class="center-modal hidden" role="dialog" aria-label="Ubah Nama Karyawan AI">
+    <div class="popover-head">
+      <div class="popover-title">Ubah Nama Tim Zentira</div>
+      <button class="icon-close" id="close-names-modal" aria-label="Tutup">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M18 6 6 18" />
+          <path d="m6 6 12 12" />
+        </svg>
+      </button>
+    </div>
+    <p class="muted-xs" style="margin-bottom: 12px;">Nama baru akan tersimpan permanen dan langsung tampil di dock,
+      panel, serta atas kepala karakter 3D.</p>
+    <div id="names-form-list" class="names-form-list"></div>
+    <div id="names-err" class="error-banner hidden" style="margin-top: 10px;"></div>
+    <div class="btn-row" style="margin-top: 14px; justify-content: flex-end;">
+      <button class="btn btn-secondary btn-sm" id="cancel-names-modal">Batal</button>
+      <button class="btn btn-accent btn-sm" id="save-names-btn">Simpan Nama</button>
+    </div>
+  </div>
+
+  <!-- Bottom Employee Dock -->
+  <nav class="agent-dock" id="agent-dock" aria-label="Daftar Karyawan AI"></nav>
+
+  <!-- Subtle Notification Toast -->
+  <div class="toast hidden" id="toast" role="status" aria-live="polite"></div>
+
+  <!-- Right Control Drawer -->
+  <aside class="drawer closed" id="drawer" aria-label="Panel Kontrol Agent">
+    <div class="drawer-header">
+      <div class="drawer-title-group">
+        <span class="drawer-avatar" id="drawer-avatar">1</span>
+        <div>
+          <h2 id="drawer-title">Pilih Karyawan AI</h2>
+          <p id="drawer-subtitle">Klik karakter 3D atau pilih dari dock bawah.</p>
+        </div>
+      </div>
+      <button class="icon-close" id="close-drawer" aria-label="Tutup panel">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M18 6 6 18" />
+          <path d="m6 6 12 12" />
+        </svg>
+      </button>
+    </div>
+
+    <div class="drawer-status-bar hidden" id="drawer-status-bar">
+      <span class="status-pill" id="drawer-status-pill">Idle</span>
+      <span class="status-bubble-text" id="drawer-status-text"></span>
+      <button class="btn btn-sm btn-secondary hidden" id="btn-drawer-idle" title="Tutup notifikasi & kembalikan agent ke mode santai">Istirahat</button>
+    </div>
+
+    <div class="drawer-body" id="drawer-body"></div>
+  </aside>
+
+  <script type="module" src="/static/panel.js"></script>
+</body>
+
+</html>

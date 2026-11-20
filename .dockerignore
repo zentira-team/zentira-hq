@@ -1,0 +1,16 @@
+.env
+.venv/
+venv/
+__pycache__/
+*.pyc
+*.pyo
+.git/
+.gitignore
+.agents/
+outputs/
+ai-riset-tren/
+tests/
+buka_kantor.bat
+*.log
+*.webm
+*.mp4

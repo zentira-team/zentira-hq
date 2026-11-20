@@ -1,0 +1,35 @@
+# Environment & secrets
+.env
+.env.*
+!.env.example
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Python caches & build artifacts
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Local outputs & runtime data
+outputs/
+data/*.db
+data/*.sqlite
+data/*.json
+data/*.csv
+
+# Local skills & unrelated workspace folders
+.agents/
+ai-riset-tren/
+
+# OS & editor files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

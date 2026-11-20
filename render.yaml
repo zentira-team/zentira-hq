@@ -1,0 +1,30 @@
+services:
+  - type: web
+    name: zentira-hq
+    runtime: python
+    plan: free
+    region: singapore
+    buildCommand: pip install -r requirements.txt
+    startCommand: python main.py office --host 0.0.0.0 --port $PORT --no-browser
+    healthCheckPath: /api/health
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.11.9"
+      - key: AI_PRIMARY_PROVIDER
+        value: gemini
+      - key: GEMINI_MODEL
+        value: gemini-3.5-flash
+      - key: GEMINI_FALLBACK_MODELS
+        value: gemini-3.5-flash-lite,gemini-3.8-flash
+      - key: GROQ_MODEL
+        value: openai/gpt-oss-120b
+      - key: GROQ_FALLBACK_MODELS
+        value: qwen/qwen3.8-27b,openai/gpt-oss-20b
+      - key: CUSTOM_AGENT_NAMES
+        value: manager=Denn,trend=ucok,repurpose=ali,leads=Lido,finance=Fina,cs=Caca
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: GROQ_API_KEY
+        sync: false
+      - key: OFFICE_PASSWORD
+        sync: false
